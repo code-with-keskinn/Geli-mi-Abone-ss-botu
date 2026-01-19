@@ -21,13 +21,13 @@ const config = {
   token: "Botun Tokeni"
 };
 
-// Fotoğrafları geçici olarak saklamak için
+
 const pendingPhotos = new Map();
 
-// İstatistikleri saklamak için
+
 const stats = new Map();
 
-// İstatistik yükleme/kaydetme fonksiyonları
+
 function loadStats() {
   try {
     const fs = require('fs');
@@ -72,12 +72,12 @@ client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
   if (message.channel.id !== config.photoChannelId) return;
 
-  // Fotoğraf kontrolü
+
   if (message.attachments.size === 0 || !message.attachments.first().contentType?.startsWith('image/')) {
     // Mesajı sil
     await message.delete();
     
-    // Kullanıcıya DM gönder
+  
     try {
       await message.author.send('⚠️ Bu kanalda sadece fotoğraf paylaşabilirsiniz! Lütfen sadece fotoğraf atın.');
     } catch (err) {
@@ -89,7 +89,7 @@ client.on('messageCreate', async (message) => {
   const attachment = message.attachments.first();
   const user = message.author;
 
-  // Embed oluştur
+
   const embed = new EmbedBuilder()
     .setTitle('📸 Yeni Fotoğraf Onay Talebi')
     .setDescription(`**Kullanıcı:** ${user.tag}\n**ID:** ${user.id}`)
@@ -98,7 +98,7 @@ client.on('messageCreate', async (message) => {
     .setTimestamp()
     .setFooter({ text: 'Fotoğraf Onay Sistemi' });
 
-  // Butonlar
+
   const row = new ActionRowBuilder()
     .addComponents(
       new ButtonBuilder()
@@ -113,19 +113,19 @@ client.on('messageCreate', async (message) => {
         .setEmoji('❌')
     );
 
-  // Embed gönder (fotoğraf embed içinde zaten var)
+
   const embedMessage = await message.channel.send({ 
     embeds: [embed], 
     components: [row] 
   });
 
-  // Fotoğraf URL'sini ve orijinal mesajı sakla
+
   pendingPhotos.set(embedMessage.id, {
     url: attachment.url,
     originalMessage: message
   });
 
-  // Staff rolüne sahip herkese DM gönder
+
   try {
     const staffRole = message.guild.roles.cache.get(config.staffRoleId);
     if (staffRole) {
@@ -167,7 +167,7 @@ client.on('interactionCreate', async (interaction) => {
         });
       }
 
-      // İstatistikleri sırala
+
       const sortedStats = Array.from(stats.entries())
         .map(([userId, data]) => ({
           userId,
@@ -184,7 +184,7 @@ client.on('interactionCreate', async (interaction) => {
         });
       }
 
-      // Embed oluştur
+
       const statsEmbed = new EmbedBuilder()
         .setTitle('📊 Yetkili İstatistikleri')
         .setColor('#9333ea')
@@ -209,7 +209,7 @@ client.on('interactionCreate', async (interaction) => {
     }
   }
 
-  // Buton tıklaması
+
   if (interaction.isButton()) {
     const member = interaction.member;
     
@@ -226,7 +226,7 @@ client.on('interactionCreate', async (interaction) => {
     const targetMember = await guild.members.fetch(userId);
     const moderator = interaction.user;
     
-    // Fotoğrafı al
+
     const photoData = pendingPhotos.get(interaction.message.id);
     const imageUrl = photoData?.url;
 
@@ -234,7 +234,7 @@ client.on('interactionCreate', async (interaction) => {
       // İstatistiği güncelle
       updateStats(moderator.id, 'approve');
 
-      // Rol ver
+
       await targetMember.roles.add(config.subscriberRoleId);
 
       // Kullanıcıya DM gönder
@@ -244,7 +244,7 @@ client.on('interactionCreate', async (interaction) => {
         console.log('DM gönderilemedi');
       }
 
-      // Log kaydı - fotoğraf eklendi
+
       const logChannel = guild.channels.cache.get(config.logChannelId);
       const logEmbed = new EmbedBuilder()
         .setTitle('✅ Fotoğraf Onaylandı')
@@ -256,7 +256,7 @@ client.on('interactionCreate', async (interaction) => {
       
       await logChannel.send({ embeds: [logEmbed] });
 
-      // Mesajı güncelle - fotoğrafı koruyalım
+
       const updatedEmbed = new EmbedBuilder()
         .setTitle('✅ Onaylandı!')
         .setDescription(`**Onaylayan:** ${moderator.tag}`)
@@ -269,7 +269,7 @@ client.on('interactionCreate', async (interaction) => {
         components: [] 
       });
 
-      // Orijinal mesajı sil
+
       try {
         if (photoData?.originalMessage) {
           await photoData.originalMessage.delete();
@@ -278,11 +278,11 @@ client.on('interactionCreate', async (interaction) => {
         console.log('Orijinal mesaj silinemedi:', err);
       }
 
-      // Fotoğrafı Map'ten temizle
+
       pendingPhotos.delete(interaction.message.id);
 
     } else if (action === 'reject') {
-      // Modal oluştur
+
       const modal = new ModalBuilder()
         .setCustomId(`reject_modal_${userId}`)
         .setTitle('Fotoğraf Reddetme Sebebi');
@@ -303,7 +303,7 @@ client.on('interactionCreate', async (interaction) => {
     }
   }
 
-  // Modal gönderimi
+
   if (interaction.isModalSubmit()) {
     if (interaction.customId.startsWith('reject_modal_')) {
       const userId = interaction.customId.replace('reject_modal_', '');
@@ -313,14 +313,14 @@ client.on('interactionCreate', async (interaction) => {
       const targetMember = await guild.members.fetch(userId);
       const moderator = interaction.user;
       
-      // İstatistiği güncelle
+
       updateStats(moderator.id, 'reject');
 
-      // Fotoğrafı al
+
       const photoData = pendingPhotos.get(interaction.message.id);
       const imageUrl = photoData?.url;
 
-      // Kullanıcıya DM gönder
+
       try {
         const dmEmbed = new EmbedBuilder()
           .setTitle('❌ Fotoğrafınız Reddedildi')
@@ -333,7 +333,7 @@ client.on('interactionCreate', async (interaction) => {
         console.log('DM gönderilemedi');
       }
 
-      // Log kaydı - fotoğraf eklendi
+
       const logChannel = guild.channels.cache.get(config.logChannelId);
       const logEmbed = new EmbedBuilder()
         .setTitle('❌ Fotoğraf Reddedildi')
@@ -345,7 +345,7 @@ client.on('interactionCreate', async (interaction) => {
       
       await logChannel.send({ embeds: [logEmbed] });
 
-      // Mesajı güncelle - fotoğrafı koruyalım
+
       const updatedEmbed = new EmbedBuilder()
         .setTitle('❌ Reddedildi!')
         .setDescription(`**Reddeden:** ${moderator.tag}\n\n**Sebep:**\n${reason}`)
@@ -358,7 +358,7 @@ client.on('interactionCreate', async (interaction) => {
         components: [] 
       });
 
-      // Orijinal mesajı sil
+
       try {
         if (photoData?.originalMessage) {
           await photoData.originalMessage.delete();
@@ -367,7 +367,7 @@ client.on('interactionCreate', async (interaction) => {
         console.log('Orijinal mesaj silinemedi:', err);
       }
 
-      // Fotoğrafı Map'ten temizle
+
       pendingPhotos.delete(interaction.message.id);
     }
   }
@@ -376,10 +376,10 @@ client.on('interactionCreate', async (interaction) => {
 client.on('ready', async () => {
   console.log(`Bot ${client.user.tag} olarak giriş yaptı!`);
   
-  // İstatistikleri yükle
+
   loadStats();
 
-  // Slash komutları kaydet
+
   const commands = [
     new SlashCommandBuilder()
       .setName('stats')
@@ -416,6 +416,7 @@ client.once("ready", () => {
 
   console.log("Bot ses kanalına otomatik bağlandı");
 });
+
 
 
 client.login(config.token);
